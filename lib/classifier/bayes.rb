@@ -23,7 +23,7 @@ class Bayes
 	#     b.train "The other", "The other text"
 	def train(category, text)
 		category = category.prepare_category_name
-		tokens_for(text).each do |word, count|
+		token_counts_for(text).each do |word, count|
 			@categories[category][word]     ||=     0
 			@categories[category][word]      +=     count
 			@total_words += count
@@ -40,7 +40,7 @@ class Bayes
 	#     b.untrain :this, "This text"
 	def untrain(category, text)
 		category = category.prepare_category_name
-		tokens_for(text).each do |word, count|
+		token_counts_for(text).each do |word, count|
 			if @total_words >= 0
 				orig = @categories[category][word]
 				@categories[category][word]     ||=     0
@@ -64,7 +64,7 @@ class Bayes
 		@categories.each do |category, category_words|
 			score[category.to_s] = 0
 			total = category_words.values.inject(0) {|sum, element| sum+element}
-			tokens_for(text).each do |word, count|
+			token_counts_for(text).each do |word, count|
 				s = category_words.has_key?(word) ? category_words[word] : 0.1
 				score[category.to_s] += Math.log(s/total.to_f)
 			end
@@ -123,15 +123,27 @@ class Bayes
 	end
 	
 	#
-	# Converts strings to tokens suitable for classification
-	def tokens_for(text)
-	  case tokenizer_type
-    when :text
-	    text.word_hash
-    when :uri
-      text.uri_token_hash
+	# Converts strings to token hash of token=>count
+	def token_counts_for(text)
+	  tokens = tokenize(text)
+    
+    if ngram_sizes
+      ngram_tokens = ngram_sizes.map { |n| tokens.ngrams(n) }.flatten
+    else
+      ngram_tokens = []
     end
+    
+    if tokenizer_type == :text
+      tokens.delete_if { |token| String::CORPUS_SKIP_WORDS.include?(token) || token.length < 3}
+      tokens.map! { |token| token.stem_intern }
+      ngram_tokens.map! { |token| token.intern }
+    end
+    
+    tokens += ngram_tokens if ngram_sizes
+    
+    tokens.count_uniq
 	end
+	
 	
 	#
 	# Optimizes the tokenization for various input types.
@@ -146,6 +158,40 @@ class Bayes
 	# Gives the current tokenizer type.  Defaults to 
 	def tokenizer_type
 	  @tokenizer_type || :text
+	end
+	
+	#
+	# Sets the N-Gram size.  Accepts a Range, Array or Integer.
+	# 
+	# N-Grams are groups of tokens (words in this case) in the 
+	# order they appear.  For example, the "2-grams" (bigrams)
+	# in "Here are some words" are "Here are", "are some", 
+	# "some words"
+	#
+	# The n-gram implementation doesn't yet do advanced analysis
+	# such as removing equivalent substrings
+	def set_ngram_size(n)
+	  if n.kind_of?(Range)
+	    @ngram_sizes = n.to_a
+    else
+      @ngram_sizes = [n].flatten
+    end
+    @ngram_sizes.delete 1
+	end
+	
+	#
+	# gives the current ngram size
+	def ngram_sizes
+	  @ngram_sizes
+	end
+	
+	def tokenize(text)
+	  case tokenizer_type
+	  when :text
+	    text.split_more
+    when :uri
+      text.uri_split
+	  end
 	end
 	
 	alias append_category add_category

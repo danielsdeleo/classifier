@@ -18,11 +18,11 @@ class StringExtensionsTest < Test::Unit::TestCase
 	  assert_equal(expected, str.split_more)
 	end
 	
-	def test_uri_token_hash
-	  uri = "/get/a_life//malware/chodes.php?blah=1&blahblah[blech]=../../../../../etc/passwd%00"
-	  expected = {"get" => 1, "a_life" => 1, "malware" => 1, "chodes.php" => 1, "blah" => 1, "1" => 1, 
-	    "blahblah" => 1, "blech" => 1, ".." => 5, "etc" => 1, "passwd" => 1, "\000" => 1 }
-	  assert_equal(expected, uri.uri_token_hash)
+	def test_uri_split
+	  uri = "/get/a_life//malware/chodes.php?blah=1&blahblah[blech]=../../etc/passwd%00"
+	  expected = ["get", "a_life", "malware", "chodes.php", "blah", "1", "blahblah",
+	    "blech", "..", "..", "etc", "passwd", "\000" ]
+	  assert_equal(expected, uri.uri_split)
 	end
 
 end

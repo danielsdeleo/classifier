@@ -31,14 +31,12 @@ class String
 	  gsub(/[^\w\s]/,"").split + gsub(/[\w]/," ").split
 	end
 	
-	def uri_token_hash
-	  d = {}
-	  URI.decode(self).gsub(/(\\|\/|\|\:|=|\&|\?|\[|\])/,' ').gsub("\000", " \000").split.each do |token|
-	   #symbols are faster, but evil URIs can have nulls && nulls are verboten in symbols
-	   d[token] ||= 0
-	   d[token] += 1
-	 end
-	 return d
+	def uri_split
+	  URI.decode(self).gsub(/(\\|\/|\|\:|=|\&|\?|\[|\])/,' ').gsub("\000", " \000").split
+	end
+	
+	def stem_intern
+	  downcase.stem.intern
 	end
 	
 	private
@@ -47,7 +45,7 @@ class String
 		d = Hash.new
 		words.each do |word|
 			word.downcase! if word =~ /[\w]+/
-			key = word.stem.intern
+			key = word.stem_intern
 			if word =~ /[^\w]/ || ! CORPUS_SKIP_WORDS.include?(word) && word.length > 2
 				d[key] ||= 0
 				d[key] += 1
@@ -138,4 +136,28 @@ class String
       "you",
       "youll",
       ]
+end
+
+class Array
+  
+  def count_uniq
+    d = {}
+    self.each do |item|
+      d[item] ||= 0
+      d[item] += 1
+    end
+    d
+  end
+
+  def ngrams(n)
+    ngram_list = []
+    if n > 0 && n <= count
+      (0 .. (count - n)).each do |i|
+        ngram_list << self[i, n].join(' ')
+      end
+    end
+    return ngram_list
+  end
+
+  
 end
