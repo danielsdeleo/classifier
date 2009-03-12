@@ -23,7 +23,7 @@ class Bayes
 	#     b.train "The other", "The other text"
 	def train(category, text)
 		category = category.prepare_category_name
-		text.word_hash.each do |word, count|
+		tokens_for(text).each do |word, count|
 			@categories[category][word]     ||=     0
 			@categories[category][word]      +=     count
 			@total_words += count
@@ -40,7 +40,7 @@ class Bayes
 	#     b.untrain :this, "This text"
 	def untrain(category, text)
 		category = category.prepare_category_name
-		text.word_hash.each do |word, count|
+		tokens_for(text).each do |word, count|
 			if @total_words >= 0
 				orig = @categories[category][word]
 				@categories[category][word]     ||=     0
@@ -64,7 +64,7 @@ class Bayes
 		@categories.each do |category, category_words|
 			score[category.to_s] = 0
 			total = category_words.values.inject(0) {|sum, element| sum+element}
-			text.word_hash.each do |word, count|
+			tokens_for(text).each do |word, count|
 				s = category_words.has_key?(word) ? category_words[word] : 0.1
 				score[category.to_s] += Math.log(s/total.to_f)
 			end
@@ -120,6 +120,32 @@ class Bayes
 	# try to initialize your categories at initialization.
 	def add_category(category)
 		@categories[category.prepare_category_name] = Hash.new
+	end
+	
+	#
+	# Converts strings to tokens suitable for classification
+	def tokens_for(text)
+	  case tokenizer_type
+    when :text
+	    text.word_hash
+    when :uri
+      text.uri_token_hash
+    end
+	end
+	
+	#
+	# Optimizes the tokenization for various input types.
+	# Current options are :text (default) and :uri
+	# All hell will probably break loose if you try to switch
+	# tokenizer types after training the classifier
+	def tokenize_as(tokenizer_type)
+	  @tokenizer_type = tokenizer_type
+	end
+	
+	#
+	# Gives the current tokenizer type.  Defaults to 
+	def tokenizer_type
+	  @tokenizer_type || :text
 	end
 	
 	alias append_category add_category

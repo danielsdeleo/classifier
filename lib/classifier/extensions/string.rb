@@ -10,6 +10,7 @@ rescue LoadError
 end
 
 require 'classifier/extensions/word_hash'
+require 'classifier/extensions/ngrams'
 
 class Object
 	def prepare_category_name; to_s.gsub("_"," ").capitalize.intern end

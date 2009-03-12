@@ -30,4 +30,15 @@ class BayesianTest < Test::Unit::TestCase
 		@classifier.train_uninteresting "here are some bad words, I hate you"
 		assert_equal 'Uninteresting', @classifier.classify("I hate bad words and you")
 	end
+	
+	def test_tokenizer_type_defaults_to_text
+	 assert_equal(:text, @classifier.tokenizer_type)
+	end
+	
+	def test_tokens_for_when_type_is_uri_text
+	 text = "one/two?three/four&five"
+	 expected = {"one" => 1, "two" => 1, "three" => 1, "four" => 1, "five" => 1}
+	 @classifier.tokenize_as :uri
+	 assert_equal(expected, @classifier.tokens_for(text))
+	end
 end

@@ -2,6 +2,8 @@
 # Copyright:: Copyright (c) 2005 Lucas Carlson
 # License::   LGPL
 
+require "uri"
+
 # These are extensions to the String class to provide convenience 
 # methods for the Classifier package.
 class String
@@ -17,12 +19,26 @@ class String
   # Return a Hash of strings => ints. Each word in the string is stemmed,
   # interned, and indexes to its frequency in the document.  
 	def word_hash
-		word_hash_for_words(gsub(/[^\w\s]/,"").split + gsub(/[\w]/," ").split)
+		word_hash_for_words(split_more)
 	end
 
 	# Return a word hash without extra punctuation or short symbols, just stemmed words
 	def clean_word_hash
 		word_hash_for_words gsub(/[^\w\s]/,"").split
+	end
+	
+	def split_more
+	  gsub(/[^\w\s]/,"").split + gsub(/[\w]/," ").split
+	end
+	
+	def uri_token_hash
+	  d = {}
+	  URI.decode(self).gsub(/(\\|\/|\|\:|=|\&|\?|\[|\])/,' ').gsub("\000", " \000").split.each do |token|
+	   #symbols are faster, but evil URIs can have nulls && nulls are verboten in symbols
+	   d[token] ||= 0
+	   d[token] += 1
+	 end
+	 return d
 	end
 	
 	private
